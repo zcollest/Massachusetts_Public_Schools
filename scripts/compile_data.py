@@ -45,7 +45,8 @@ def compile_data(paths):
 # list of paths for function
 pathlist = ["data/enrollmentbygrade.csv", "data/enrollmentbyracegender.csv",
 "data/enrollselectedpopulations.csv", 'data/ClassSizebyGenPopulation.csv',
-'data/ClassSizebyRaceEthnicity.csv', 'data/staffracegender.csv']
+'data/ClassSizebyRaceEthnicity.csv', 'data/staffracegender.csv', "data/TeacherSalaries.csv",
+'data/netspending.csv']
 
 # calling function
 data = compile_data(pathlist)
