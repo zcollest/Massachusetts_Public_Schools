@@ -16,11 +16,11 @@ from functools import reduce
 import os
 
 # changing working directory
-os.chdir('/Users/zacharycollester/Documents/ma_public_schools/')
+os.chdir('/Users/zacharycollester/Documents/ma_public_schools/data/')
 
-#------------------------------------------------------#
-#COMPILING AND CLEANING MA PUBLIC SCHOOL DISTRCICT DATA#
-#------------------------------------------------------#
+#-----------------------------------------#
+#COMPILING MA PUBLIC SCHOOL DISTRCICT DATA#
+#-----------------------------------------#
 
 # important notes before running compilation function:
 #   1. should edit column names manually in excel first
@@ -29,7 +29,7 @@ os.chdir('/Users/zacharycollester/Documents/ma_public_schools/')
 #   4. if data isn't available for all columns, those columns are left blank
 
 # function for compiling district data
-def compile_data(paths):
+def compile_data(pathlist):
     dflist = list()
     # looping through data files, appending each df in a list
     for i in range(len(pathlist)):
@@ -42,16 +42,35 @@ def compile_data(paths):
     data = reduce(lambda left,right: pd.merge(left,right,how='outer',on='District Name'), dflist)
     return data
 
-# list of paths for function
-pathlist = ["data/enrollmentbygrade.csv", "data/enrollmentbyracegender.csv",
-"data/enrollselectedpopulations.csv", 'data/ClassSizebyGenPopulation.csv',
-'data/ClassSizebyRaceEthnicity.csv', 'data/staffracegender.csv', "data/TeacherSalaries.csv",
-'data/netspending.csv']
+# creating a list of paths for function
+data_directory = '/Users/zacharycollester/Documents/ma_public_schools/data/'
+file_list = []
+
+for filename in os.listdir(data_directory):
+    if filename.endswith(".csv"):
+        file_list.append(filename)
+file_list.sort()
+
 
 # calling function
-data = compile_data(pathlist)
+data = compile_data(file_list)
 
-# general cleaning (if necessary - deleting unnecessary columns, etc.)
+
+#----------------------------------------#
+#CLEANING MA PUBLIC SCHOOL DISTRCICT DATA#
+#----------------------------------------#
+# taking care of blank values
+#   assigning a large number to random values, and will ignore this nunber in analysis
+
+blank_number = 999999
+data = data.fillna(blank_number)
+column_list = []
+
+for columns in data:
+   column_list.append(columns)
+
+data = data.drop(data.iloc[:,[69,76]])
 
 # changing dtypes
+
 

@@ -1,0 +1,6 @@
+TO-DO
+
+thursday, august 13, 2020
+1. figure out how to get rid of "nan" columns 
+2. convnert to proper dtypes
+3. determine best way to handle null cells 
