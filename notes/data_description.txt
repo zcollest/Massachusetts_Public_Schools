@@ -1,0 +1,5 @@
+data description
+
+- all data is separated by district, rather than by individual school
+- data from 2017-2018 school year used since not all data is updated past that
+- not every file contains data for every district, so the null values must be handled
