@@ -6,3 +6,7 @@ thursday, august 13, 2020
 	- deleted $ symbol in excel for relevant files
 - creates "nan" columns and need to figure out how to handle null values
 - have to figure out how to properly change dtypes (perhaps in function)
+
+friday, august 14, 2020
+- removed null values and successfully changed proper types (except for a few enrollment columns???) 
+- data is now set to do analyses

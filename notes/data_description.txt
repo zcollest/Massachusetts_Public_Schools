@@ -3,3 +3,17 @@ data description
 - all data is separated by district, rather than by individual school
 - data from 2017-2018 school year used since not all data is updated past that
 - not every file contains data for every district, so the null values must be handled
+
+
+GENERAL NOTES:
+
+1. Basic exploratory data analysis (refer to kaggle link):
+	- missing data, size of schools, outliers 
+	- visualizing college graduate data 
+	- correlation matrix as a diagnostic for regression analysis
+	- hypothesis testing for differences in post-grad by race
+
+
+2. Multivariable Regression Model / Classification
+- regression analysis to predict post-grad outcomes (all students, black students, hispanic students)
+	- must figure out how to choose the predictor variables (research this) 
