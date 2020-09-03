@@ -6,7 +6,9 @@ library(moments)
 library(readr)
 library(Hmisc)
 library(corrplot)
+library(arsenal)
 
+#### IMPORTING DATA AND SPLITTING STATE TOTALS ####
 # importing data 
 data <- read_csv("/Users/zacharycollester/Documents/ma_public_schools/data/csv_R/data.csv")
 
@@ -15,7 +17,9 @@ statetotals <- data.frame(data[407,])
 # removing state total and Hampden school from dataframe
 data <- data[-c(407,408),]
 
-## ENROLLMENT DATA ## 
+
+
+#### MISSING DATA / ENROLLMENT DATA ####   
 # missing data
 nalist <- vector()
 for (i in 1:ncol(data)){
@@ -41,7 +45,9 @@ enrollmentdata <- ggplot(enrollment, aes(x=enrollment)) + geom_histogram(color="
   ggtitle("Histogram of Total Enrollment by District")
 enrollmentdata
 
-## COLLEGE ATTENDANCE ##
+
+
+## COLLEGE ATTENDANCE DATA FOR ALL DISTRICTS ##
 # all
 college <- data.frame(data$`Attending Coll./Univ. (%)`,'All')
 # white
@@ -63,9 +69,41 @@ collegeattend <- filter(collegeattend, Percent != 99999)
 collegeboxplot <- ggplot(collegeattend, aes(x=Group, y=Percent, fill=Group)) + 
   geom_boxplot(alpha=0.3) + theme(legend.position="none") +
   scale_fill_brewer(palette="BuPu") +
-  ggtitle("Boxplot of College Attendance \nby Racial/Socioeconomic Group")
+  ggtitle("Boxplot of College Attendance \nby Racial/Socioeconomic Group") +
+  geom_hline(aes(yintercept=statetotals$Attending.Coll..Univ......1),color="darkblue", linetype="dashed", size=1)
 collegeboxplot
 
+
+#### COMPARISON OF MEANS OF COLLEGE ATTENDANCE BY GROUP FOR ALL DISTRICTS ####
+# Shapiro Test of Normality for College Attendance (not normal)      
+collegeattend %>%
+  group_by(Group) %>%
+  shapiro_test(Percent)
+
+# Levene Test for Homogeneity of Variances (variance is homogenous)
+leveneTest(Percent ~ Group, data = collegeattend)
+
+# Kruskall Wallace Test
+kruskal.test(Percent ~ Group, data = collegeattend)
+# Multiple Comparisons with Wilcox Test
+pairwise.wilcox.test(collegeattend$Percent, collegeattend$Group,
+                     p.adjust.method = "BH")
+
+#### COMPARISON OF MEANS OF ALL COLLEGE ATTENDANCE BETWEEN ALL AND LARGE DISTRICTS ####
+alldistrictsize <- rbind(allcoll,allbigcoll)  ## variables from other R script
+# Shapiro Test of Normality for College Attendance (not normal)      
+alldistrictsize %>%
+  group_by(group) %>%
+  shapiro_test(percent)
+
+# Levene Test for Homogeneity of Variances (variance is homogenous)
+leveneTest(percent ~ group, data = alldistrictsize)
+
+# Kruskall Wallace Test
+kruskal.test(percent ~ group, data = alldistrictsize)
+
+
+#### EXAMINING ENROLLMENT AND COLLEGE ATTENDANCE ####
 # Scatter plot of enrollment vs college attendance
 enrollattend <- data.frame(data$`District Name`,data$Total,data$`Attending Coll./Univ. (%)`, data$`White Attending Coll./Univ. (%)`,
                            data$`Black Attending Coll./Univ. (%)`, data$`Hisp Attending Coll./Univ. (%)`, 
@@ -84,51 +122,9 @@ enrollattend <- enrollattend %>% filter(white != 99999)
 ggplot(enrollattend, aes(x=enroll, y=white)) + geom_point() + geom_hline(aes(yintercept=median(white)),color="darkblue", linetype="dashed", size=1)
 
 
-# Summary Statistics for College Attendance
-collegeattend %>% 
-  group_by(Group) %>% 
-  summarise(count = n(),
-            min = min(Percent),
-            max = max(Percent),
-            mean = mean(Percent),
-            median = median(Percent),
-            std = sd(Percent))
-
-# State Total Summary Statistics 
-statetotals %>% 
-  summarise(all = Attending.Coll..Univ......1,
-            white = White.Attending.Coll..Univ......1,
-            black = Black.Attending.Coll..Univ......1,
-            hispanic = Hisp.Attending.Coll..Univ......1,
-            lowincome = Low.Income.Attending.Coll..Univ......1)
-
-# Enrollment Outlier Summary Statistics
-enrollment_outliers <- data %>% filter(Total > 8000)
-# getting rid of lawrence
-enrollment_outliers <- enrollment_outliers[-5,]
-enrollment_outliers %>% 
-  summarise(all = mean(`Attending Coll./Univ. (%)`),
-            white = mean(`White Attending Coll./Univ. (%)`),
-            black = mean(`Black Attending Coll./Univ. (%)`),
-            hispanic = mean(`Hisp Attending Coll./Univ. (%)`),
-            lowincome = mean(`Low Income Attending Coll./Univ. (%)`)) 
-
-# Shapiro Test of Normality for College Attendance (not normal)      
-collegeattend %>%
-  group_by(Group) %>%
-  shapiro_test(Percent)
-
-# Levene Test for Homogeneity of Variances (variance is homogenous)
-leveneTest(Percent ~ Group, data = collegeattend)
-
-# Kruskall Wallace Test
-kruskal.test(Percent ~ Group, data = collegeattend)
-# Multiple Comparisons with Wilcox Test
-pairwise.wilcox.test(collegeattend$Percent, collegeattend$Group,
-                     p.adjust.method = "BH")
 
 
-# Dataframe of potential predictors (all)
+# DATAFRAME AND CORRELATION MATRIX OF POTENTIAL PREDICTORS (ALL)
 collegeattendvars <- data.frame(data$`Average Class Size`, data$`Average Salary`, data$`Total Expenditures per Pupil`,
                                 data$reading_writing_all, data$math_all, data$`% All Completed Advanced`, data$`% Exemplary`,
                                 data$`% Proficient`, data$`% Needs Improvement`, data$`Attending Coll./Univ. (%)`)
@@ -150,14 +146,59 @@ corrplot(res$r, method = "color", col = col(200),
          diag = FALSE)
 
 
+# DATAFRAME AND CORRELATION MATRIX OF POTENTIAL PREDICTORS (HISPANIC)
+hispcollegeattendvars <- data.frame(data$`Average Class Size`, data$`%_staff_hispanic`, data$enroll_hispanic, data$`Average Salary`, data$`Total Expenditures per Pupil`,
+                                data$reading_writing_hispanic, data$math_hispanic, data$`%_complete_advanced_hispanic`, data$`% Exemplary`,
+                                data$`% Proficient`, data$`% Needs Improvement`, data$`Hisp Attending Coll./Univ. (%)`)
+hispcollegeattendvars <- hispcollegeattendvars %>% filter_all(all_vars(.!= 99999))
+columns <- c('class_size','hisp_staff', 'enroll_hisp', 'avg_salary', 'per_pupil$', 'sat_rr', 'sat_math', 'advanced_course', 'exemplary', 'proficient', 'needs_improv', 'college')
+names(hispcollegeattendvars) <- columns
+
+# Correlation Matrix of Predictor Variables (with pearson R2 values)
+res <- rcorr(as.matrix(hispcollegeattendvars), type = "pearson")
+col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
+corrplot(res$r, method = "color", col = col(200),
+         type = "upper", order = "hclust", number.cex = .7,
+         addCoef.col = "black", # Add coefficient of correlation
+         tl.col = "black", tl.srt = 45, # Text label color and rotation
+         # Combine with significance
+         p.mat = res$P, sig.level = 0.01, insig = "blank", 
+         # hide correlation coefficient on the principal diagonal
+         diag = FALSE)
 
 
 
+# DATAFRAME AND CORRELATION MATRIX OF POTENTIAL PREDICTORS (LOW INCOME)
+bigdistcollegeattendvars <- data.frame(data$`Average Class Size`, data$enroll_low_econ, data$`Average Salary`, data$`Total Expenditures per Pupil`,
+                                    data$reading_writing_lowincome, data$math_lowincome, data$`%_complete_advanced_lowincome`, data$`% Exemplary`,
+                                    data$`% Proficient`, data$`% Needs Improvement`, data$`Low Income Attending Coll./Univ. (%)`)
+bigdistcollegeattendvars <- bigdistcollegeattendvars %>% filter_all(all_vars(.!= 99999))
+columns <- c('class_size', 'enroll_lowincome', 'avg_salary', 'per_pupil$', 'sat_rr', 'sat_math', 'advanced_course', 'exemplary', 'proficient', 'needs_improv', 'college')
+names(bigdistcollegeattendvars) <- columns
 
-# see how correlation matrix changes for larger districts and smaller districts
-# multiple regression for big districts (all, hispanic, low income)
-# multiple regression for smaller districts (all)
-# maybe redo stats and hypothesis testing for small and big district subsets
+# Correlation Matrix of Predictor Variables (with pearson R2 values)
+res <- rcorr(as.matrix(bigdistcollegeattendvars), type = "pearson")
+col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
+corrplot(res$r, method = "color", col = col(200),
+         type = "upper", order = "hclust", number.cex = .7,
+         addCoef.col = "black", # Add coefficient of correlation
+         tl.col = "black", tl.srt = 45, # Text label color and rotation
+         # Combine with significance
+         p.mat = res$P, sig.level = 0.01, insig = "blank", 
+         # hide correlation coefficient on the principal diagonal
+         diag = FALSE)
 
+
+# Multiple regression for all districts (all, hispanic, low income)
+# Multiple regression for big districts (all)
+# state total includes values not reported 
+
+# while graduation rates are lower for all big disrict groups, I am lead to believe that 
+# most of the differences in college attendnace rates for different racial/socioeconomic groups is 
+# not strictly due to district size. There also just may not be enough data. In general, college
+# attendance rates for all racial/socioeconomic groups decline in larger districts. 
+
+# Therefore, I want to look at multivariate regressions for all districts and stratify those by the three
+# significant groups.
 
 
