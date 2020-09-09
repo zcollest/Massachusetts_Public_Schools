@@ -64,4 +64,3 @@ for columns in data:
             data[columns] = data[columns].astype(int)
 
 
-data.to_csv(r'/Users/zacharycollester/documents/ma_public_schools/data/csv_R/data.csv', index = False)

@@ -104,9 +104,9 @@ sumvars$group <- 'All'
 bigsumvars <- data %>% filter(Total > 6000)
 bigsumvars <- data.frame(bigsumvars$`District Name`,bigsumvars$Total, bigsumvars$`Average Class Size`, bigsumvars$`Average Salary`, bigsumvars$`Total Expenditures per Pupil`,
                          bigsumvars$reading_writing_all, bigsumvars$math_all, bigsumvars$`% All Completed Advanced`, bigsumvars$`% Exemplary`,
-                         bigsumvars$`% Proficient`, bigsumvars$`% Needs Improvement`, bigsumvars$`Attending Coll./Univ. (%)`)
+                         bigsumvars$`% Proficient`, bigsumvars$`% Needs Improvement`, bigsumvars$`Attending Coll./Univ. (%)`, bigsumvars$`Actual NSS as % of Required`, bigsumvars$`Teacher % Retained`)
 bigsumvars <- bigsumvars %>% filter_all(all_vars(.!= 99999))
-columns <- c('name', 'total', 'class_size', 'avg_salary', 'per_pupil$', 'sat_rr', 'sat_math', 'advanced_course', 'exemplary', 'proficient', 'needs_improv', 'college')
+columns <- c('name', 'total', 'class_size', 'avg_salary', 'per_pupil', 'sat_rr', 'sat_math', 'advanced_course', 'exemplary', 'proficient', 'needs_improv', 'college','actualNSS','retained')
 names(bigsumvars) <- columns
 bigsumvars$group <- 'Big Districts'
 

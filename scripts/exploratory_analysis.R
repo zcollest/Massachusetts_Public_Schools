@@ -18,7 +18,6 @@ statetotals <- data.frame(data[407,])
 data <- data[-c(407,408),]
 
 
-
 #### MISSING DATA / ENROLLMENT DATA ####   
 # missing data
 nalist <- vector()
@@ -127,9 +126,9 @@ ggplot(enrollattend, aes(x=enroll, y=white)) + geom_point() + geom_hline(aes(yin
 # DATAFRAME AND CORRELATION MATRIX OF POTENTIAL PREDICTORS (ALL)
 collegeattendvars <- data.frame(data$`Average Class Size`, data$`Average Salary`, data$`Total Expenditures per Pupil`,
                                 data$reading_writing_all, data$math_all, data$`% All Completed Advanced`, data$`% Exemplary`,
-                                data$`% Proficient`, data$`% Needs Improvement`, data$`Attending Coll./Univ. (%)`)
+                                data$`% Proficient`, data$`% Needs Improvement`, data$`Attending Coll./Univ. (%)`, data$`Actual NSS as % of Required`)
 collegeattendvars <- collegeattendvars %>% filter_all(all_vars(.!= 99999))
-columns <- c('class_size', 'avg_salary', 'per_pupil$', 'sat_rr', 'sat_math', 'advanced_course', 'exemplary', 'proficient', 'needs_improv', 'college')
+columns <- c('class_size', 'avg_salary', 'per_pupil', 'sat_rr', 'sat_math', 'advanced_course', 'exemplary', 'proficient', 'needs_improv', 'college', 'actualNSS')
 names(collegeattendvars) <- columns
 newdata <- collegeattendvars[,-1]
 
@@ -149,9 +148,9 @@ corrplot(res$r, method = "color", col = col(200),
 # DATAFRAME AND CORRELATION MATRIX OF POTENTIAL PREDICTORS (HISPANIC)
 hispcollegeattendvars <- data.frame(data$`Average Class Size`, data$`%_staff_hispanic`, data$enroll_hispanic, data$`Average Salary`, data$`Total Expenditures per Pupil`,
                                 data$reading_writing_hispanic, data$math_hispanic, data$`%_complete_advanced_hispanic`, data$`% Exemplary`,
-                                data$`% Proficient`, data$`% Needs Improvement`, data$`Hisp Attending Coll./Univ. (%)`)
+                                data$`% Proficient`, data$`% Needs Improvement`, data$`Hisp Attending Coll./Univ. (%)`, data$`Actual NSS as % of Required`)
 hispcollegeattendvars <- hispcollegeattendvars %>% filter_all(all_vars(.!= 99999))
-columns <- c('class_size','hisp_staff', 'enroll_hisp', 'avg_salary', 'per_pupil$', 'sat_rr', 'sat_math', 'advanced_course', 'exemplary', 'proficient', 'needs_improv', 'college')
+columns <- c('class_size','hisp_staff', 'enroll_hisp', 'avg_salary', 'per_pupil', 'sat_rr', 'sat_math', 'advanced_course', 'exemplary', 'proficient', 'needs_improv', 'college', 'actualNSS')
 names(hispcollegeattendvars) <- columns
 
 # Correlation Matrix of Predictor Variables (with pearson R2 values)
@@ -169,18 +168,18 @@ corrplot(res$r, method = "color", col = col(200),
 
 
 # DATAFRAME AND CORRELATION MATRIX OF POTENTIAL PREDICTORS (LOW INCOME)
-bigdistcollegeattendvars <- data.frame(data$`Average Class Size`, data$enroll_low_econ, data$`Average Salary`, data$`Total Expenditures per Pupil`,
+lowinccollegeattendvars <- data.frame(data$`Average Class Size`, data$enroll_low_econ, data$`Average Salary`, data$`Total Expenditures per Pupil`,
                                     data$reading_writing_lowincome, data$math_lowincome, data$`%_complete_advanced_lowincome`, data$`% Exemplary`,
-                                    data$`% Proficient`, data$`% Needs Improvement`, data$`Low Income Attending Coll./Univ. (%)`)
-bigdistcollegeattendvars <- bigdistcollegeattendvars %>% filter_all(all_vars(.!= 99999))
-columns <- c('class_size', 'enroll_lowincome', 'avg_salary', 'per_pupil$', 'sat_rr', 'sat_math', 'advanced_course', 'exemplary', 'proficient', 'needs_improv', 'college')
-names(bigdistcollegeattendvars) <- columns
+                                    data$`% Proficient`, data$`% Needs Improvement`, data$`Low Income Attending Coll./Univ. (%)`, data$`Actual NSS as % of Required`)
+lowinccollegeattendvars <- lowinccollegeattendvars %>% filter_all(all_vars(.!= 99999))
+columns <- c('class_size', 'enroll_lowincome', 'avg_salary', 'per_pupil', 'sat_rr', 'sat_math', 'advanced_course', 'exemplary', 'proficient', 'needs_improv', 'college', 'actualNSS')
+names(lowinccollegeattendvars) <- columns
 
 # Correlation Matrix of Predictor Variables (with pearson R2 values)
-res <- rcorr(as.matrix(bigdistcollegeattendvars), type = "pearson")
+res <- rcorr(as.matrix(lowinccollegeattendvars), type = "pearson")
 col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
 corrplot(res$r, method = "color", col = col(200),
-         type = "upper", order = "hclust", number.cex = .7,
+         type = "lower", order = "hclust", number.cex = .7,
          addCoef.col = "black", # Add coefficient of correlation
          tl.col = "black", tl.srt = 45, # Text label color and rotation
          # Combine with significance
