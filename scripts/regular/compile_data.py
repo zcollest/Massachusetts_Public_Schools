@@ -16,7 +16,7 @@ os.chdir('/Users/zacharycollester/Documents/ma_public_schools/data/df_data')
 
 # important notes before running compilation function:
 #   1. should edit column names manually in excel first
-#   2. should delete $ signs or other special characters in excel first (except commas)
+#   2. should delete $ signs or other specisal characters in excel first (except commas)
 #   3. put pathlist data in desired order to show up in dataframe
 #   4. if data isn't available for all columns, columns receive 99999 input
 

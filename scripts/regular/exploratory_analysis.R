@@ -44,7 +44,20 @@ enrollmentdata <- ggplot(enrollment, aes(x=enrollment)) + geom_histogram(color="
   ggtitle("Histogram of Total Enrollment by District")
 enrollmentdata
 
+### TAKE TECHNICAL SCHOOLS OUT AND ADD COLUMN DENOTING PUBLIC OR CHARTER ##
 
+
+data <- data %>% filter(str_detect(`District Name`, "Technical", negate=TRUE))
+data$DistType <- "Public"
+for (i in 1:length(charter_bin)){
+  if (charter_bin[i] == TRUE){
+    data$DistType[i] <- "Charter"
+  }
+}
+
+charter_bin <- str_detect(data$`District Name`, "Charter")
+
+  
 
 ## COLLEGE ATTENDANCE DATA FOR ALL DISTRICTS ##
 # all
@@ -73,6 +86,8 @@ collegeboxplot <- ggplot(collegeattend, aes(x=Group, y=Percent, fill=Group)) +
 collegeboxplot
 
 
+
+
 #### COMPARISON OF MEANS OF COLLEGE ATTENDANCE BY GROUP FOR ALL DISTRICTS ####
 # Shapiro Test of Normality for College Attendance (not normal)      
 collegeattend %>%
@@ -87,6 +102,7 @@ kruskal.test(Percent ~ Group, data = collegeattend)
 # Multiple Comparisons with Wilcox Test
 pairwise.wilcox.test(collegeattend$Percent, collegeattend$Group,
                      p.adjust.method = "BH")
+
 
 #### COMPARISON OF MEANS OF ALL COLLEGE ATTENDANCE BETWEEN ALL AND LARGE DISTRICTS ####
 alldistrictsize <- rbind(allcoll,allbigcoll)  ## variables from other R script
@@ -126,9 +142,9 @@ ggplot(enrollattend, aes(x=enroll, y=white)) + geom_point() + geom_hline(aes(yin
 # DATAFRAME AND CORRELATION MATRIX OF POTENTIAL PREDICTORS (ALL)
 collegeattendvars <- data.frame(data$`Average Class Size`, data$`Average Salary`, data$`Total Expenditures per Pupil`,
                                 data$reading_writing_all, data$math_all, data$`% All Completed Advanced`, data$`% Exemplary`,
-                                data$`% Proficient`, data$`% Needs Improvement`, data$`Attending Coll./Univ. (%)`, data$`Actual NSS as % of Required`)
+                                data$`% Proficient`, data$`% Needs Improvement`, data$`Attending Coll./Univ. (%)`, data$`Actual NSS as % of Required`, data$G12)
 collegeattendvars <- collegeattendvars %>% filter_all(all_vars(.!= 99999))
-columns <- c('class_size', 'avg_salary', 'per_pupil', 'sat_rr', 'sat_math', 'advanced_course', 'exemplary', 'proficient', 'needs_improv', 'college', 'actualNSS')
+columns <- c('class_size', 'avg_salary', 'per_pupil', 'sat_rr', 'sat_math', 'advanced_course', 'exemplary', 'proficient', 'needs_improv', 'college', 'actualNSS','G12')
 names(collegeattendvars) <- columns
 newdata <- collegeattendvars[,-1]
 

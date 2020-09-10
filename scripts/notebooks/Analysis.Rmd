@@ -1,0 +1,306 @@
+---
+title: "Exploring & Modeling MA Public School District Data"
+author: "Zach Collester"
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    df_print: paged
+---
+##### Attempting to uncover potential biases within the MA public school system related to income and race, specifically with respect to college attendance rates. 
+
+```{r,message=FALSE,warning=FALSE}
+library(tidyverse)
+library(ggpubr)
+library(rstatix)
+library(car)
+library(moments)
+library(readr)
+library(Hmisc)
+library(corrplot)
+library(arsenal)
+library(stringr)
+library(summarytools)
+```
+
+## Cleaning the Data
+
+First, I will save the row of state totals and then remove state totals from the dataframe. I am also removing `Hampden School District`, which had null values for all variables, and removing all districts with no 12th grade enrollment. Lastly, I am removing all technical districts, since these schools are theoretically serving a different population of interest and may skew the college attendance statistics. Also removing districts with null values for attending college.
+
+
+```{r, message=FALSE}
+
+data <- read_csv("/Users/zacharycollester/Documents/ma_public_schools/data/csv_R/data.csv")
+statetotals <- data.frame(data[407,])
+data <- data[-c(407,408),]
+data <- data %>% filter(G12 != 0)
+data <- data %>% filter(str_detect(`District Name`, "Technical", negate=TRUE))
+data <- data %>% filter(`Attending Coll./Univ. (%)` != 99999)
+
+```
+
+
+#### Null Data 
+
+Now I am summing the null data for each school district and plotting this data as a histogram.
+
+```{r, message = FALSE}
+
+nalist <- vector()
+for (i in 1:ncol(data)){
+  total <- sum(data[,i] == 99999)
+  nalist[i] <- total
+}
+nalist <- data.frame(nalist)
+missingdata <- ggplot(nalist, aes(x=nalist)) + geom_histogram(color="black", fill="lightblue") + 
+  geom_vline(aes(xintercept=mean(nalist)),color="darkblue", linetype="dashed", size=1) +
+  labs(y="Frequency",x="Number of Missing Data Points") +
+  ggtitle("Histogram of Missing Data")
+missingdata
+```
+
+We can see that the mean null values per district is slightly below 50. It is important to note that there are some districts that are missing significant amounts of data. This is due to the fact that many data points have a certain threshold of samples that must be reached before reporting in order to protect student/staff privacy. Additionally, the presence of smaller charter schools / technical schools classified as independent districts may skew these results. We will not remove any districts at this point since further analyses involve stratifying this data set. 
+
+
+## College Attendance Rates and Enrollment 
+
+### Gradre 12 Enrollment
+Below, I am plotting grade 12 student enrollment per district.
+
+```{r,message=FALSE}
+enrollment <- vector()
+for (i in 1:nrow(data)){
+  enrollment[i] <- as.integer(data[i,"G12"])
+}
+enrollment <- data.frame(enrollment)
+enrollmentdata <- ggplot(enrollment, aes(x=enrollment)) + geom_histogram(color="black", fill="lightblue") + 
+  geom_vline(aes(xintercept=median(enrollment)),color="darkblue", linetype="dashed", size=1) +
+  labs(y="Frequency",x="Number of Grade 12 Students") +
+  ggtitle("Histogram of Total Enrollment by District")
+enrollmentdata
+```
+
+This is clearly a highly skewed histogram, showing that the majority of districts have fewer than 200 seniors. A few very large districts skew this histogram, specifically `Boston School District`, which has a total grade 12 enrollment of approximately 4,000 students. This may add bias into our analysis down the road, but we will come back to this later.
+
+
+### Charter Schools 
+
+We are now going to add a column in the dataframe denoting whether a school is a charter school or not. We can then incoporate this binary grouping into visualizations later on.
+
+``` {r, message=FALSE}
+
+charter_bin <- str_detect(data$`District Name`, "Charter")
+data$DistType <- "Public"
+count = 0
+for (i in 1:length(charter_bin)){
+  if (charter_bin[i] == TRUE){
+    data$DistType[i] <- "Charter"
+    count = count + 1
+  }
+}
+count 
+nrow(data)-count
+```
+There are 37 charter districts and 231 non-charter districts in this dataset.
+
+### College Attendance by Specific Populations
+
+Before separating charter schools or determining whether large districts may bias overall college attendance rates, we are going to visualize college attendance rates for all districts separated by various racial / low income groupings. 
+
+``` {r, message=FALSE}
+college <- data.frame(data$`Attending Coll./Univ. (%)`,'All')
+collegewhite <- data.frame(data$`White Attending Coll./Univ. (%)`,'White')
+collegeblack <- data.frame(data$`Black Attending Coll./Univ. (%)`,'Black')
+collegehisp <- data.frame(data$`Hisp Attending Coll./Univ. (%)`,'Hispanic/Latino')
+collegeecon <- data.frame(data$`Low Income Attending Coll./Univ. (%)`,'Low Income')
+
+dflist = list(college=college, collegewhite=collegewhite, collegeblack=collegeblack, collegehisp=collegehisp, collegeecon=collegeecon)
+colnames <- c("Percent", "Group")
+invisible(list2env(lapply(dflist, setNames, colnames), .GlobalEnv))
+
+collegeattend <- rbind(college,collegewhite,collegeblack,collegehisp,collegeecon)
+collegeattend <- filter(collegeattend, Percent != 99999)
+
+collegeboxplot <- ggplot(collegeattend, aes(x=Group, y=Percent, fill=Group)) + 
+  geom_boxplot(alpha=0.3) + theme(legend.position="none") +
+  scale_fill_brewer(palette="BuPu") +
+  ggtitle("Boxplot of College Attendance by Racial / Low Income Groups") +
+  geom_hline(aes(yintercept=statetotals$Attending.Coll..Univ......1),color="darkblue", linetype="dashed", size=1)
+collegeboxplot
+```
+
+We can conduct a comparison of means test to determine whether the differences between these group means are statistically significant. We first show that the data is not normally distributed and the variances are homogenous. We can therefore utilize the Kruskall-Wallace Test and the Wilcox Test.
+
+``` {r, message = FALSE}
+# Shapiro Test of Normality for College Attendance (not normal)      
+collegeattend %>%
+  group_by(Group) %>%
+  shapiro_test(Percent)
+
+# Levene Test for Homogeneity of Variances (variance is homogenous)
+leveneTest(Percent ~ Group, data = collegeattend)
+
+# Kruskall Wallace Test
+kruskal.test(Percent ~ Group, data = collegeattend)
+# Multiple Comparisons with Wilcox Test
+pairwise.wilcox.test(collegeattend$Percent, collegeattend$Group,
+                     p.adjust.method = "BH")
+```
+
+The past analysis on Kaggle (insert link) demonstrated that there is a negative linear relationship between percentage of low-income students and college attendance rates in individual schools. The results from this analysis support that claim on a district level, and additionally suggest that a similar result exists for hispanic/latino students.
+
+### Big Districts
+
+The dashed blue line in the boxplot above represents the mean state college attendance rate for all students. This is a cumulative mean, meaning that it is calculated by dividing the total number of students attending college by the total number of senior students in the state. The calculated means for each group are a "mean of means" and are calculated by averaging the mean college attendance rate for each district and specific racial / low income group. These calculations are inherently biased since we showed that the enrollment histogram does not follow a normal distribution. Smaller districts are therefore disproportinately represented in these calculated means, so we must determine whether grade 12 enrollment size plays a role in college attendance rates. 
+
+``` {r, message=FALSE}
+
+data$DistSize <- "Normal"
+for (i in 1:nrow(data)){
+  if ((data$G12[i] >= 500) == TRUE){
+    data$DistSize[i] <- "Big"
+  }
+}
+count=0
+for (x in data$DistSize){
+  if (x=="Big"){
+    count = count +1
+  }
+}
+count
+nrow(data)-count
+```
+
+We have defined large districts as having at least 500 12th grade students enrolled. The dataset has 15 large districts, and 253 "normal" sized districts.
+
+``` {r, message = FALSE}
+
+allcollboxplot <- ggplot(data, aes(x=DistType, y=`Attending Coll./Univ. (%)`, fill=DistSize)) + 
+  geom_boxplot(alpha=0.3) +
+  ggtitle("Boxplot of All College Attendance by District Size and District Type") +
+  geom_hline(aes(yintercept=statetotals$Attending.Coll..Univ......1),color="darkblue", linetype="dashed", size=1)
+allcollboxplot
+
+```
+
+The boxplot above suggests that there is a large difference in the overall college attendance rates between large districts and normal districts. Additionally, it shows that there are no charter districts classified as "large", and the overall college attendance rate is only slightly larger (~5%) for charter districts compared to non-charter districts. 
+
+``` {r, message=FALSE}
+ggplot(data, aes(x=G12, y=`Attending Coll./Univ. (%)`)) + geom_point() + geom_hline(aes(yintercept=median(`Attending Coll./Univ. (%)`)),color="darkblue", linetype="dashed", size=1)
+```
+
+We can also visualize the relationship between grade 12 enrollment and college attendance rates using the scatterplot above. We can see that many of the schools with higher grade 12 enrollment have college attendance rates that fall well below the median. As grade 12 enrollment decreases, the mean college attendance rates per district are more evenly distributed about the median.
+
+Since there are only 15 large districts and it appears that they have a different population mean for college attendance rates, we will exclude the big districts in our regression model. It is worth noting that since a large number of the state's students come from these larger districts, in the future it is worth analyzing these districts in more detail independent from the other districts. Before excluding the large districts, lets take a look at the college attendance rates for each group of interest in the big districts, to see if it differs from the group means when considering all districts. 
+
+``` {r, message = FALSE}
+bigdist <- data %>% filter(DistSize != "Normal")
+```
+
+### College Attendance in Big Districts
+
+Let's take a look at the college attendance rates for each group of interest in only larger districts (including charter districts). I am not showing the code since it mirrors the grouped boxplot code from above. 
+
+``` {r, message=FALSE, echo=FALSE}
+
+college <- data.frame(data$`Attending Coll./Univ. (%)`,'All')
+collegewhite <- data.frame(data$`White Attending Coll./Univ. (%)`,'White')
+collegeblack <- data.frame(data$`Black Attending Coll./Univ. (%)`,'Black')
+collegehisp <- data.frame(data$`Hisp Attending Coll./Univ. (%)`,'Hispanic/Latino')
+collegeecon <- data.frame(data$`Low Income Attending Coll./Univ. (%)`,'Low Income')
+
+dflist = list(college=college, collegewhite=collegewhite, collegeblack=collegeblack, collegehisp=collegehisp, collegeecon=collegeecon)
+colnames <- c("Percent", "Group")
+invisible(list2env(lapply(dflist, setNames, colnames), .GlobalEnv))
+
+collegeattend <- rbind(college,collegewhite,collegeblack,collegehisp,collegeecon)
+collegeattend <- filter(collegeattend, Percent != 99999)
+
+collegeboxplot <- ggplot(collegeattend, aes(x=Group, y=Percent, fill=Group)) + 
+  geom_boxplot(alpha=0.3) + theme(legend.position="none") +
+  scale_fill_brewer(palette="BuPu") +
+  ggtitle("College Attendance by Racial / Low Income Groups for Normal Sized Districts") +
+  geom_hline(aes(yintercept=statetotals$Attending.Coll..Univ......1),color="darkblue", linetype="dashed", size=1)
+collegeboxplot
+
+```
+
+We can see that the differences within each group are roughly the same when utilizing means from all districts, however, each group mean is significantly lower when only using big districts compared to all districts. Now we can exclude large districts in our regression data set. Additionally, charter schools are not required to report many of the variables we will use in the regression model, and so we will also exclude them from our analysis. 
+
+
+``` {r, message=FALSE}
+data <- data %>% filter(DistSize != "Big")
+data <- data %>% filter(DistType != "Charter")
+```
+
+
+## Multivariate Regression
+
+### Subsetting Data
+
+We will start by subsetting the dataframe with our chosen potential predictor variables. There are 14 variables that I have selected that aim to quantify size, salaries and funding, percent enrollment of selected populations, achievement indicators, as well as teacher performance. The variables and their descriptive statistics are below.  
+
+``` {r, message=FALSE, warning=FALSE}
+
+collegeattendvars <- data.frame(data$`District Name`, data$G12, data$`Average Class Size`, data$enroll_hispanic, data$enroll_low_econ, data$`Actual NSS as % of Required`, data$`Average Salary`, data$`Total Expenditures per Pupil`, data$reading_writing_all, data$math_all, data$`% All Completed Advanced`, data$`% Exemplary`,data$`% Proficient`, data$`% Needs Improvement`, data$`Attending Coll./Univ. (%)`)
+collegeattendvars <- collegeattendvars %>% filter_all(all_vars(.!= 99999))
+columns <- c('name', 'g12', 'class_size', 'enroll_hisp', 'enroll_lowincome','actualNSS', 'avg_salary', 'per_pupil', 'sat_rr', 'sat_math', 'advanced_course', 'exemplary', 'proficient', 'needs_improv', 'college')
+names(collegeattendvars) <- columns
+summarytools::descr(collegeattendvars[2:15])
+```
+
+### Correlation Matrix 
+
+Now let's create a correlation matrix to determine which variables have high collinearity so that we can be more efficient when choosing our regression variables.
+
+```{r, message=FALSE}
+res <- rcorr(as.matrix(collegeattendvars[2:15]), type = "pearson")
+col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
+corrplot(res$r, method = "color", col = col(200),
+         type = "lower", order = "hclust", number.cex = .7,
+         addCoef.col = "black", # Add coefficient of correlation
+         tl.col = "black", tl.srt = 45, # Text label color and rotation
+         # Combine with significance
+         p.mat = res$P, sig.level = 0.01, insig = "blank", 
+         # hide correlation coefficient on the principal diagonal
+         diag = FALSE)
+
+```
+
+Looking at the correlation matrix, there are many variables which are significantly correlated with college attendance rates (`advanced courses`, `sat reading and writing`, `sat math`, `average teacher salary`, `net school spending relative to required spending`, `percent of teachers needing improvement`, `hispanic enrollment`, and `low income enrollment`). The two SAT score variables are very highly correlated, so we will only use one in the regression model (`sat math`). There is some minor collinearity between some of the other variables, but we will run the regression model with them and then re-evaluate. 
+ 
+### Modeling 
+
+``` {r}
+fitall <- lm(college ~ sat_math + avg_salary + per_pupil + advanced_course + needs_improv + actualNSS + enroll_lowincome + enroll_hisp, data=collegeattendvars)
+summary(fitall) 
+```
+
+The results of this initial model show that the adjusted R-squared value is slightly 60%, meaning that 60% of the variance with respect to college attendance rates can be attributed to these variables. 
+
+``` {r, message=FALSE}
+Anova(fitall)
+```
+
+We can use modified hypothesis testing to determine whether a variable is contributing to the model. Based on the results above, we can see that 
+`needs_improv` and `enroll_hisp` are not heavily contributing to the model. We can remove these variables and refit the regression model. 
+
+```{r, message=FALSE}
+fitnew <- lm(college ~ sat_math + avg_salary + per_pupil + advanced_course + actualNSS + enroll_lowincome, data=collegeattendvars)
+summary(fitnew) 
+```
+
+Removing those two variables did not significantly affect the R-squared value, as expected.
+
+``` {r, message=FALSE}
+Anova(fitnew)
+```
+
+The hypothesis tests show that all variables are significant. Now lets take a look at the diagnostic plots. 
+
+``` {r, message=FALSE}
+plot(fitnew)
+```
+
+The plots show that 1. there is no distinctive residual patterns 2. residuals are normally distributed 3. residuals do not violate homoscedasity 4. there seem to be no hugely influential cases. The results of this regression analysis can be found in much more detail (and in plain english) on the results section of the project website. 

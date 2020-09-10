@@ -1,33 +1,3 @@
-#### ANALYZING MEANS BY DISTRICT SIZES ####
-
-# All College Attendance by District Size
-
-col <- 'percent'
-allcoll <- data.frame(data$`Attending Coll./Univ. (%)`)
-names(allcoll) <- col
-allcoll$group <- 'All Districts'
-allcoll <- allcoll %>% filter_all(all_vars(.!= 99999))
-
-allbigcoll <- data %>% filter(Total > 6000)
-allbigcoll <- data.frame(allbigcoll$`Attending Coll./Univ. (%)`)
-names(allbigcoll) <- col
-allbigcoll$group <- 'Big Districts'
-allbigcoll <- allbigcoll %>% filter_all(all_vars(.!= 99999))
-
-allsmallcoll <- data %>% filter(Total < 6000)
-allsmallcoll <- data.frame(allsmallcoll$`Attending Coll./Univ. (%)`)
-names(allsmallcoll) <- col
-allsmallcoll$group <- 'Small Districts'
-allsmallcoll <- allsmallcoll %>% filter_all(all_vars(.!= 99999))
-
-total <- rbind(allcoll,allbigcoll, allsmallcoll)
-
-allcollboxplot <- ggplot(total, aes(x=group, y=percent, fill=group)) + 
-  geom_boxplot(alpha=0.3) + theme(legend.position="none") +
-  scale_fill_brewer(palette="BuPu") +
-  ggtitle("Boxplot of All College Attendance \nby District Size") +
-  geom_hline(aes(yintercept=statetotals$Attending.Coll..Univ......1),color="darkblue", linetype="dashed", size=1)
-allcollboxplot
 
 
 # Hispanic/Latinx College Attendance by District Size
@@ -122,6 +92,6 @@ smallsumvars$group <- 'Small Districts'
 
 all_predictors <- rbind(sumvars,bigsumvars,smallsumvars)
 
-table_one <- tableby(group ~ ., data = all_predictors[2:13], numeric.test = "kwt")
+table_one <- tableby(group ~ ., data = data[2:13], numeric.test = "kwt")
 predictor_sum <- summary(table_one, title = "Variable Summary",text=TRUE, total=FALSE,test=TRUE, pfootnote=TRUE)
 predictor_sum
