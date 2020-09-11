@@ -41,7 +41,7 @@
 
 					<!-- Social Icons -->
 						<ul class="icons">
-							<a href="https://linkedin.com/" target="_blank" class="icon brands fa-linkedin"></a>
+							<a href="https://www.linkedin.com/in/zachcollester/" target="_blank" class="icon brands fa-linkedin"></a>
 							<a href="https://github.com/zcollest" target="_blank" class="icon brands fa-github"></a>
 							<a href="https://medium.com/@zrcollest" target="_blank" class="icon brands fa-medium-m"></a>
 							<a href = "mailto: zrcollest@gmail.com" target="_blank"  class="icon solid fa-envelope"></a>
@@ -79,7 +79,17 @@
 								<h2>The Project</h2>
 							</header>
 
-							<p>Need to add information here.</p>
+							<p align="left">After scrolling through Kaggle, I came across a notebook titled <a href="https://www.kaggle.com/ndalziel/who-goes-to-college" target="blank">who goes to college?</a> by
+							<a href="hhttps://www.kaggle.com/ndalziel" target="blank">Nigel Dalziel</a>. His analysis used a Massachusetts public school
+							<a href= "https://www.kaggle.com/ndalziel/massachusetts-public-schools-data"  target="blank">data set</a> to show, at the individual school level,
+							that college attendance rates are negatively correlated with low income student enrollment. This project aims to expand upon Dalziel's previous work, and analyzes college attendance rates
+							at the district level for all students as well as specific student populations. Additionally, I attempted to determine how district size and district type (charter vs non-charter) affect
+							college attendance rates for these populations. Lastly, I fit a multivariate regression model to elucidate the most powerful variables in predicting college attendance 
+							at the district level. <br /><br />
+							Note: since the district level data was not publicly available on Kaggle, I used python to compile and prepare my data set from the MA DOE <a href= "http://profiles.doe.mass.edu/state_report/" target="blank">website</a>. 
+							The Jupyter Notebook with this code as well as the Rmarkdown analysis notebook are linked below.
+
+							 </p>
 
 
 						<!--Data Analysis -->
@@ -104,7 +114,7 @@
 						<div class="container">
 
 							<header>
-								<h2>Exploratory Data Analysis</h2>
+								<h2>Data Analysis and Modeling</h2>
 							</header>
 
 							<img src="images/r.png" width="300" height="100" alt="" /></a>
@@ -123,7 +133,28 @@
 							<header>
 								<h2>Discussing the Results</h2>
 							</header>
-							<p>Need to write up important results.</p>
+							<h2 align="left"> Exploratory Analysis</h2>
+							<p align="left">One of the most important results from this analysis is that, when taking into account all districts in the state,
+							college attendance rates for both low income (64%) and hispanic/latinx students (59%) are significantly lower than all (79%),
+							white (80%), and black (74%) students. When stratifying for larger districts (> 500 grade 12 students), the differences between
+							each groups' college attendance rates are similar, but each group has a lower college attendance rate. Larger districts in general
+							send a lower percentage of students to college compared to the smaller districts. Charter schools send a larger percentage of students to college (85%)
+							relative to the state average (72%). </p>
+							<h3 align="left"> Multivariate Regression Model</h3>
+							<p align="left">I fit a multivariate regression model to predict college attendance rates for all students using only data from smaller districts. The model
+							was able to account for 60% of the variance in college attendance rates. After refining the model, the significant predictor
+							variables were as follows: <b>1. SAT math scores, 2. Per pupil expenditure, 3. Net district spending relative to required spending,
+							4. Percent of low income student enrollment, 5. Average teacher salary, and 6. Percent of students completing advanced courses. </b>   </p>
+							<h3 align="left"> Takeaways</h3>
+							<p align="left"> This analysis does not provide insight as to <b>why</b> college attendance rates for low income and
+							hispanic/latinx students are significantly lower compared to other groups. I believe that future research should take into account additional variables
+							such as census/municipality data. Assuming that student desire to attend college is consistent across all districts, large districts seem to be failing
+							students in terms of college attendance rates. There are not enough large districts in this data set to fit a multivariate regression for large districts, so I
+							suggest future work tackle this problem with school-wide data instead. Lastly, it seems that district-level economics (net spending, teacher salaries, per pupil expenditures)
+							meaningfully contribute to college attendance. While there is clearly much more work to be done, perhaps
+							MA education administrators could utilize some of these insights and commission more extensive studies in order to improve post-graduate 
+							outcomes for MA public school students.
+							  </b>   </p>
 
 						</div>
 					</section>
