@@ -1,2 +1,6 @@
 .DS_Store
 .Rhistory
+scripts/regular
+data/df_data
+data/other_data
+notes/
