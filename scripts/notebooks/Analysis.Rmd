@@ -192,13 +192,14 @@ ggplot(data, aes(x=G12, y=`Attending Coll./Univ. (%)`)) + geom_point() + geom_hl
 
 We can also visualize the relationship between grade 12 enrollment and college attendance rates using the scatterplot above. We can see that many of the schools with higher grade 12 enrollment have college attendance rates that fall well below the median. As grade 12 enrollment decreases, the mean college attendance rates per district are more evenly distributed about the median.
 
-Since there are only 15 large districts and it appears that they have a different population mean for college attendance rates, we will exclude the big districts in our regression model. It is worth noting that since a large number of the state's students come from these larger districts, in the future it is worth analyzing these districts in more detail independent from the other districts. Before excluding the large districts, lets take a look at the college attendance rates for each group of interest in the big districts, to see if it differs from the group means when considering all districts. 
+It is worth noting that since a large number of the state's students come from these larger districts, in the future it is worth analyzing these districts in more detail independent from the other districts.
+
+
+### College Attendance in Big Districts
 
 ``` {r, message = FALSE}
 bigdist <- data %>% filter(DistSize != "Normal")
 ```
-
-### College Attendance in Big Districts
 
 Let's take a look at the college attendance rates for each group of interest in only larger districts (including charter districts). I am not showing the code since it mirrors the grouped boxplot code from above. 
 
@@ -226,14 +227,11 @@ collegeboxplot
 
 ```
 
-We can see that the differences within each group are roughly the same when utilizing means from all districts, however, each group mean is significantly lower when only using big districts compared to all districts. Now we can exclude large districts in our regression data set. Additionally, charter schools are not required to report many of the variables we will use in the regression model, and so we will also exclude them from our analysis. 
-
+We can see that the differences within each group are roughly the same when utilizing means from all districts, however, each group mean is significantly lower when only using big districts compared to all districts. Since charter schools are not required to report many of the variables we will use in the regression model, we will exclude them from our model. I am not excluding the large districts from the model, as I am going to assume that the most important variables determining college attendance rates are consistent across all districts. This assumption should ideally be verified in the future with more in depth research on the big districts.
 
 ``` {r, message=FALSE}
-data <- data %>% filter(DistSize != "Big")
 data <- data %>% filter(DistType != "Charter")
 ```
-
 
 ## Multivariate Regression
 
@@ -268,7 +266,7 @@ corrplot(res$r, method = "color", col = col(200),
 
 ```
 
-Looking at the correlation matrix, there are many variables which are significantly correlated with college attendance rates (`advanced courses`, `sat reading and writing`, `sat math`, `average teacher salary`, `net school spending relative to required spending`, `percent of teachers needing improvement`, `hispanic enrollment`, and `low income enrollment`). The two SAT score variables are very highly correlated, so we will only use one in the regression model (`sat math`). There is some minor collinearity between some of the other variables, but we will run the regression model with them and then re-evaluate. 
+Looking at the correlation matrix, there are many variables which are significantly correlated with college attendance rates (`advanced courses`, `sat reading and writing`, `sat math`, `average teacher salary`, `net school spending relative to required spending`, `percent of teachers needing improvement`, `hispanic/latinx enrollment`, and `low income enrollment`). The two SAT score variables are very highly correlated, so we will only use one in the regression model (`sat math`). There is some minor collinearity between some of the other variables, but we will run the regression model with them and then re-evaluate. 
  
 ### Modeling 
 
@@ -277,17 +275,16 @@ fitall <- lm(college ~ sat_math + avg_salary + per_pupil + advanced_course + nee
 summary(fitall) 
 ```
 
-The results of this initial model show that the adjusted R-squared value is slightly 60%, meaning that 60% of the variance with respect to college attendance rates can be attributed to these variables. 
+The results of this initial model show that the adjusted R-squared value is roughly 63%, meaning that 63% of the variance with respect to college attendance rates can be attributed to these variables. 
 
 ``` {r, message=FALSE}
 Anova(fitall)
 ```
 
-We can use modified hypothesis testing to determine whether a variable is contributing to the model. Based on the results above, we can see that 
-`needs_improv` and `enroll_hisp` are not heavily contributing to the model. We can remove these variables and refit the regression model. 
+We can use modified hypothesis testing to determine whether a variable is contributing to the model. I will remove variables based on a p-value of <0.01. Based on the results above, we can see that `needs_improv`, `enroll_lowincome`, `avg_salary`, and `enroll_hisp` are not heavily contributing to the model. We can remove these variables and refit the regression model. 
 
 ```{r, message=FALSE}
-fitnew <- lm(college ~ sat_math + avg_salary + per_pupil + advanced_course + actualNSS + enroll_lowincome, data=collegeattendvars)
+fitnew <- lm(college ~ sat_math + per_pupil + advanced_course + actualNSS, data=collegeattendvars)
 summary(fitnew) 
 ```
 
@@ -303,4 +300,4 @@ The hypothesis tests show that all variables are significant. Now lets take a lo
 plot(fitnew)
 ```
 
-The plots show that 1. there is no distinctive residual patterns 2. residuals are normally distributed 3. residuals do not violate homoscedasity 4. there seem to be no hugely influential cases. The results of this regression analysis can be found in much more detail (and in plain english) on the results section of the project website. 
+The plots show that 1. there is no distinctive residual patterns 2. residuals are normally distributed 3. residuals do not violate homoscedasity 4. there seem to be no hugely influential cases. The results of this regression analysis can be found in more detail (and in plain english) on the results section of the project website. 
